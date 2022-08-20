@@ -1,6 +1,13 @@
-FROM ubuntu:18.04
+FROM nvidia/cuda:11.2.2-devel-ubuntu18.04
 
 ARG DEBIAN_FRONTEND=noninteractive
+
+# 07-25-2022 update
+RUN rm /etc/apt/sources.list.d/cuda.list
+WORKDIR /tmp RUN apt-key del 7fa2af80 && \ apt install wget && \ 
+wget https://developer.download.nvidia.com/compute/cuda/repos/$distro/$arch/cuda-keyring_1.0-1_all.deb && \ 
+dpkg -i cuda-keyring_1.0-1_all.deb
+# End Temporal Solution
 
 RUN set -x && \
   apt-get update -y && \
@@ -35,7 +42,6 @@ RUN set -x && \
     libsqlite3-dev \
     libceres-dev \
     libboost-all-dev \ 
-    nvidia-cuda-toolkit \
     gdb &&\
   : "remove cache" && \
   apt-get autoremove -y && \
@@ -50,20 +56,18 @@ RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${PW}" | chpasswd && adduse
 WORKDIR /home/${USER}
 
 RUN cd /home/${USER} && \
-    git clone --depth 1 --branch 3.4.2 https://github.com/opencv/opencv.git && \
-    git clone --depth 1 --branch 3.4.2 https://github.com/opencv/opencv_contrib.git && \
+    git clone --depth 1 --branch 4.5.5 https://github.com/opencv/opencv.git && \
+    git clone --depth 1 --branch 4.5.5 https://github.com/opencv/opencv_contrib.git && \
     cd opencv && mkdir build && cd build && \
     CC=/usr/bin/gcc-6 CXX=/usr/bin/g++-6 cmake .. -DWITH_CUDA=ON -DCMAKE_BUILD_TYPE=Release \
     -DOPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules -DOPENCV_ENABLE_NONFREE:BOOL=ON \
-    -DCUDA_NVCC_FLAGS=--expt-relaxed-constexpr && \
-    make -j8 && \
+    -DCUDA_NVCC_FLAGS=--expt-relaxed-constexpr -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs \
+    -DENABLE_PRECOMPILED_HEADERS=OFF && \
+    make -j16 && \
     make install
 
-RUN cd /home/${USER} && \
-    git clone https://github.com/youkely/InfrasCal.git && \
-    cd InfrasCal && mkdir build && cd build && \
-    CC=/usr/bin/gcc-6 CXX=/usr/bin/g++-6 cmake -DCMAKE_BUILD_TYPE=Release .. && \
-    make -j8
+# build scripts read context from .; defined in Dockerfile
+COPY InfrasCal/ /home/${USER}/InfrasCal/
 
 RUN chown -R ${UID}:${GID} /home/${USER}
 

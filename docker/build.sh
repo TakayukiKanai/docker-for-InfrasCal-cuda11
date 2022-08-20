@@ -11,4 +11,4 @@ docker build .. \
     -f Dockerfile.${ARCH} \
     --build-arg UID=$(id -g) \
     --build-arg GID=$(id -g) \
-    -t ${ARCH}infrascal:latest
+    -t ${ARCH}infrascal:cuda11.2 

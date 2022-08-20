@@ -1,0 +1,3 @@
+[submodule "InfrasCal"]
+	path = InfrasCal
+	url = https://github.com/TakayukiKanai/InfrasCal.git
